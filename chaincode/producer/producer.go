@@ -8,7 +8,7 @@ import (
 )
 
 // Defined to implement chaincode interface
-type PcXchg struct {
+type Producer struct {
 }
 
 // Define our struct to store PCs in Blockchain, start fields upper case for JSON
@@ -20,53 +20,34 @@ type PC struct {
 }
 
 // Implement Init
-func (c *PcXchg) Init(stub shim.ChaincodeStubInterface) pb.Response { 
-    creatorByte, err := stub.GetCreator()
-    if(err != nil) {
-        return shim.Error("GetCreator err")
-    }
-    stub.PutState(string(creatorByte), []byte("producer"))
-    return shim.Success(nil) 
+func (c *Producer) Init(stub shim.ChaincodeStubInterface) pb.Response {
+    return shim.Success(nil)
 }
 
 // Implement Invoke
-func (c *PcXchg) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
+func (c *Producer) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 
     // Get function name and args
     function, args := stub.GetFunctionAndParameters()
 
-    // Check if the producer calls the chaincode
-    if c.producer(stub) {
-        if function == "createPC" {
-            // A computer is produced and available
-            return c.createPC(stub, args)
-        }
-    } else {
-        if function == "buyPC" {
-            // A market bought a computer
-            return c.updateStatus(stub, args, "bought")
-        } else if function == "handBackPC" {
-            // A market handed back a computer
-            return c.updateStatus(stub, args, "returned")
-        }
-    }
-
-    if function == "queryStock" {
-        // Stock query
-        return c.queryStock(stub, args)
-    } else if function == "queryDetail" {
-        // Get details of a computer
+    switch function {
+    case "createPC":
+        return c.createPC(stub, args)
+    case "updateStatus":
+        return c.updateStatus(stub, args)
+    case "queryDetail":
         return c.queryDetail(stub, args)
-    } else if function == "queryCompleteStock" {
-        // Detailed stock query
+    case "queryStock":
+        return c.queryStock(stub, args)
+    case "queryCompleteStock":
         return c.queryCompleteStock(stub, args)
+    default:
+        return shim.Error("Functions: createPC, updateStatus, queryDetail, queryStock, queryCompleteStock")
     }
-
-    return shim.Error("You can call createPc as producer and buyPC/handBackPC as market. Producer and market can call queryStock, queryDetail, queryCompleteStock")
 }
 
 // createPC puts an available PC in the Blockchain
-func (c *PcXchg) createPC(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (c *Producer) createPC(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
     if len(args) != 3 {
         return shim.Error("createPC arguments usage: Serialnumber, Serie, Others")
@@ -92,8 +73,8 @@ func (c *PcXchg) createPC(stub shim.ChaincodeStubInterface, args []string) pb.Re
 }
 
 // updateStatus handles sell and hand back
-func (c *PcXchg) updateStatus(stub shim.ChaincodeStubInterface, args []string, status string) pb.Response {
-    if len(args) != 1 {
+func (c *Producer) updateStatus(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+    if len(args) != 2 {
         return shim.Error("This function needs the serial number as argument")
     }
 
@@ -109,7 +90,7 @@ func (c *PcXchg) updateStatus(stub shim.ChaincodeStubInterface, args []string, s
     json.Unmarshal(v, &pc)
 
     // Change the status
-    pc.Status = status 
+    pc.Status = args[1] 
     // Encode JSON data
     pcAsBytes, err := json.Marshal(pc)
 
@@ -123,7 +104,7 @@ func (c *PcXchg) updateStatus(stub shim.ChaincodeStubInterface, args []string, s
 }
 
 // queryDetail gives all fields of stored data and wants to have the serial number
-func (c *PcXchg) queryDetail(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (c *Producer) queryDetail(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
     // Look for the serial number
     value, err := stub.GetState(args[0])
@@ -141,7 +122,7 @@ func (c *PcXchg) queryDetail(stub shim.ChaincodeStubInterface, args []string) pb
 }
 
 // queryStock give all stored keys in the database
-func (c *PcXchg) queryStock(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (c *Producer) queryStock(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
     // See stub.GetStateByRange in interfaces.go
     start, end := "",""
@@ -173,7 +154,7 @@ func (c *PcXchg) queryStock(stub shim.ChaincodeStubInterface, args []string) pb.
 }
 
 // queryCompleteStock give all stored values in the database
-func (c *PcXchg) queryCompleteStock(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (c *Producer) queryCompleteStock(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
     // See stub.GetStateByRange in interfaces.go
     start, end := "",""
@@ -207,17 +188,8 @@ func (c *PcXchg) queryCompleteStock(stub shim.ChaincodeStubInterface, args []str
 }
 
 func main() {
-    err := shim.Start(new(PcXchg))
+    err := shim.Start(new(Producer))
     if err != nil {
         fmt.Printf("Error starting chaincode sample: %s", err)
     }
-}
-
-func (c *PcXchg) producer(stub shim.ChaincodeStubInterface) bool {
-    creatorByte, _ := stub.GetCreator()
-    v, err := stub.GetState(string(creatorByte))
-    if (err != nil) {
-        return false
-    }
-    return string(v) == "producer";
 }

@@ -1,3 +1,4 @@
+#!/bin/bash
 set -e -x
 
 echo \#\#\# CHANNELS SETUP BY AMAZON
@@ -17,24 +18,30 @@ docker exec cli.Amazon bash -c 'peer channel update -o orderer.pcxchg.com:7050 -
 docker exec cli.Amazon bash -c 'peer channel update -o orderer.pcxchg.com:7050 -c dell -f ./channels/amazonanchordell.tx'
 docker exec cli.Amazon bash -c 'peer channel update -o orderer.pcxchg.com:7050 -c hp   -f ./channels/amazonanchorhp.tx'
 
-echo \#\#\# CHAINCODE INSTALL
-docker exec cli.Amazon bash -c 'peer chaincode install -p pcxchg -n pcxchg -v 0'
-docker exec cli.Asus bash   -c 'peer chaincode install -p pcxchg -n pcxchg -v 0'
-docker exec cli.Dell bash   -c 'peer chaincode install -p pcxchg -n pcxchg -v 0'
-docker exec cli.HP bash     -c 'peer chaincode install -p pcxchg -n pcxchg -v 0'
+for chaincode in "producer" "market"
+do
+    echo \#\#\# CHAINCODE INSTALL \($chaincode\)
+    docker exec cli.Amazon bash -c "peer chaincode install -p $chaincode -n $chaincode -v 0"
+    docker exec cli.Asus bash   -c "peer chaincode install -p $chaincode -n $chaincode -v 0"
+    docker exec cli.Dell bash   -c "peer chaincode install -p $chaincode -n $chaincode -v 0"
+    docker exec cli.HP bash     -c "peer chaincode install -p $chaincode -n $chaincode -v 0"
+done
 
-echo \#\#\# CHAINCODE INSTANTIATE
-docker exec cli.Asus bash -c "peer chaincode instantiate -C asus -n pcxchg -v 0 -c '{\"Args\":[]}'"
-docker exec cli.Dell bash -c "peer chaincode instantiate -C dell -n pcxchg -v 0 -c '{\"Args\":[]}'"
-docker exec cli.HP bash   -c "peer chaincode instantiate -C hp   -n pcxchg -v 0 -c '{\"Args\":[]}'"
+for chaincode in "producer" "market"
+do
+    echo \#\#\# CHAINCODE INSTANTIATE \($chaincode\)
+    docker exec cli.Asus bash -c "peer chaincode instantiate -C asus -n $chaincode -v 0 -c '{\"Args\":[]}'"
+    docker exec cli.Dell bash -c "peer chaincode instantiate -C dell -n $chaincode -v 0 -c '{\"Args\":[]}'"
+    docker exec cli.HP bash   -c "peer chaincode instantiate -C hp   -n $chaincode -v 0 -c '{\"Args\":[]}'"
+done
 
 echo \#\#\# FILLING LEDGER
-docker exec cli.Asus bash -c "peer chaincode invoke -C asus -n pcxchg -c '{\"Args\":[\"createPC\", \"Asus001\", \"foo\", \"bar\"]}'"
-docker exec cli.Asus bash -c "peer chaincode invoke -C asus -n pcxchg -c '{\"Args\":[\"createPC\", \"Asus002\", \"foo\", \"bar\"]}'"
-docker exec cli.Asus bash -c "peer chaincode invoke -C asus -n pcxchg -c '{\"Args\":[\"createPC\", \"Asus003\", \"foo\", \"bar\"]}'"
-docker exec cli.Dell bash -c "peer chaincode invoke -C dell -n pcxchg -c '{\"Args\":[\"createPC\", \"Dell001\", \"foo\", \"bar\"]}'"
-docker exec cli.Dell bash -c "peer chaincode invoke -C dell -n pcxchg -c '{\"Args\":[\"createPC\", \"Dell002\", \"foo\", \"bar\"]}'"
-docker exec cli.Dell bash -c "peer chaincode invoke -C dell -n pcxchg -c '{\"Args\":[\"createPC\", \"Dell003\", \"foo\", \"bar\"]}'"
-docker exec cli.Dell bash -c "peer chaincode invoke -C dell -n pcxchg -c '{\"Args\":[\"createPC\", \"Dell004\", \"foo\", \"bar\"]}'"
-docker exec cli.HP bash   -c "peer chaincode invoke -C hp   -n pcxchg -c '{\"Args\":[\"createPC\", \"HP001\",   \"foo\", \"bar\"]}'"
-docker exec cli.HP bash   -c "peer chaincode invoke -C hp   -n pcxchg -c '{\"Args\":[\"createPC\", \"HP002\",   \"foo\", \"bar\"]}'"
+docker exec cli.Asus bash -c "peer chaincode invoke -C asus -n producer -c '{\"Args\":[\"createPC\", \"Asus001\", \"foo\", \"bar\"]}'"
+docker exec cli.Asus bash -c "peer chaincode invoke -C asus -n producer -c '{\"Args\":[\"createPC\", \"Asus002\", \"foo\", \"bar\"]}'"
+docker exec cli.Asus bash -c "peer chaincode invoke -C asus -n producer -c '{\"Args\":[\"createPC\", \"Asus003\", \"foo\", \"bar\"]}'"
+docker exec cli.Dell bash -c "peer chaincode invoke -C dell -n producer -c '{\"Args\":[\"createPC\", \"Dell001\", \"foo\", \"bar\"]}'"
+docker exec cli.Dell bash -c "peer chaincode invoke -C dell -n producer -c '{\"Args\":[\"createPC\", \"Dell002\", \"foo\", \"bar\"]}'"
+docker exec cli.Dell bash -c "peer chaincode invoke -C dell -n producer -c '{\"Args\":[\"createPC\", \"Dell003\", \"foo\", \"bar\"]}'"
+docker exec cli.Dell bash -c "peer chaincode invoke -C dell -n producer -c '{\"Args\":[\"createPC\", \"Dell004\", \"foo\", \"bar\"]}'"
+docker exec cli.HP bash   -c "peer chaincode invoke -C hp   -n producer -c '{\"Args\":[\"createPC\", \"HP002\",   \"foo\", \"bar\"]}'"
+docker exec cli.HP bash   -c "peer chaincode invoke -C hp   -n producer -c '{\"Args\":[\"createPC\", \"HP001\",   \"foo\", \"bar\"]}'"
