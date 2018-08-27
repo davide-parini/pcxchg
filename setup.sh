@@ -18,7 +18,7 @@ docker exec cli.Amazon bash -c 'peer channel update -o orderer.pcxchg.com:7050 -
 docker exec cli.Amazon bash -c 'peer channel update -o orderer.pcxchg.com:7050 -c dell -f ./channels/amazonanchordell.tx'
 docker exec cli.Amazon bash -c 'peer channel update -o orderer.pcxchg.com:7050 -c hp   -f ./channels/amazonanchorhp.tx'
 
-for chaincode in "producer" "market"
+for chaincode in "producer"
 do
     echo \#\#\# CHAINCODE INSTALL \($chaincode\)
     docker exec cli.Amazon bash -c "peer chaincode install -p $chaincode -n $chaincode -v 0"
@@ -27,12 +27,26 @@ do
     docker exec cli.HP bash     -c "peer chaincode install -p $chaincode -n $chaincode -v 0"
 done
 
-for chaincode in "producer" "market"
+for chaincode in "market"
+do
+    echo \#\#\# CHAINCODE INSTALL \($chaincode\)
+    docker exec cli.Amazon bash -c "peer chaincode install -p $chaincode -n $chaincode -v 0"
+done
+
+for chaincode in "producer"
 do
     echo \#\#\# CHAINCODE INSTANTIATE \($chaincode\)
-    docker exec cli.Asus bash -c "peer chaincode instantiate -C asus -n $chaincode -v 0 -c '{\"Args\":[]}'"
-    docker exec cli.Dell bash -c "peer chaincode instantiate -C dell -n $chaincode -v 0 -c '{\"Args\":[]}'"
-    docker exec cli.HP bash   -c "peer chaincode instantiate -C hp   -n $chaincode -v 0 -c '{\"Args\":[]}'"
+    docker exec cli.Asus bash -c "peer chaincode instantiate -C asus -n $chaincode -v 0 -c '{\"Args\":[]}' -P OR\(\'AsusMSP.member\'\)"
+    docker exec cli.Dell bash -c "peer chaincode instantiate -C dell -n $chaincode -v 0 -c '{\"Args\":[]}' -P OR\(\'DellMSP.member\'\)"
+    docker exec cli.HP bash   -c "peer chaincode instantiate -C hp   -n $chaincode -v 0 -c '{\"Args\":[]}' -P OR\(\'HPMSP.member\'\)"
+done
+
+for chaincode in "market"
+do
+    echo \#\#\# CHAINCODE INSTANTIATE \($chaincode\)
+    docker exec cli.Amazon bash -c "peer chaincode instantiate -C asus -n $chaincode -v 0 -c '{\"Args\":[]}' -P OR\(\'AmazonMSP.member\'\)"
+    docker exec cli.Amazon bash -c "peer chaincode instantiate -C dell -n $chaincode -v 0 -c '{\"Args\":[]}' -P OR\(\'AmazonMSP.member\'\)"
+    docker exec cli.Amazon bash -c "peer chaincode instantiate -C hp   -n $chaincode -v 0 -c '{\"Args\":[]}' -P OR\(\'AmazonMSP.member\'\)"
 done
 
 echo \#\#\# FILLING LEDGER
